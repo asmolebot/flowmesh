@@ -83,4 +83,36 @@ export interface TriageResult {
     archiveCandidate: number;
     noise: number;
   };
+  /** Dry-run action plan for archive/noise candidates (when --dry-run is used) */
+  plan?: TriagePlan;
+}
+
+/**
+ * Planned action for a single message (dry-run output).
+ */
+export interface PlannedAction {
+  messageId: string;
+  threadId?: string;
+  subject: string;
+  from: string;
+  receivedAt: string;
+  bucket: string;
+  category: string;
+  confidence: number;
+  reason: string;
+  action: "archive" | "trash" | "skip";
+}
+
+/**
+ * Dry-run plan — structured output describing what triage *would* do.
+ */
+export interface TriagePlan {
+  dryRun: true;
+  actions: PlannedAction[];
+  summary: {
+    archive: number;
+    trash: number;
+    skip: number;
+    total: number;
+  };
 }

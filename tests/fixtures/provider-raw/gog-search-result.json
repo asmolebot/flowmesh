@@ -1,0 +1,37 @@
+{
+  "messages": [
+    {
+      "id": "abc123def456",
+      "threadId": "abc123def456",
+      "date": "2026-04-03 10:25",
+      "from": "Updates Team <updates@example.com>",
+      "subject": "Your monthly report for April",
+      "labels": ["UNREAD", "CATEGORY_UPDATES", "INBOX"]
+    },
+    {
+      "id": "def789ghi012",
+      "threadId": "def789ghi012",
+      "date": "2026-04-03 09:15",
+      "from": "Jane Smith <jane@example.org>",
+      "subject": "Re: Project timeline discussion",
+      "labels": ["UNREAD", "IMPORTANT", "INBOX"]
+    },
+    {
+      "id": "ghi345jkl678",
+      "threadId": "ghi345jkl678",
+      "date": "2026-04-02 18:30",
+      "from": "noreply@notifications.example.com",
+      "subject": "Your order #98765 has shipped",
+      "labels": ["CATEGORY_UPDATES", "INBOX"]
+    },
+    {
+      "id": "jkl901mno234",
+      "threadId": "thread-group-1",
+      "date": "2026-04-02 14:00",
+      "from": "Newsletter <digest@news.example.com>",
+      "subject": "Weekly Tech Digest - April 2",
+      "labels": ["CATEGORY_PROMOTIONS"]
+    }
+  ],
+  "nextPageToken": "09876543210"
+}

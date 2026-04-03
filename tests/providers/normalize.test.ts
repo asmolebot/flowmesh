@@ -33,7 +33,7 @@ describe("Himalaya adapter normalize", () => {
 describe("Gog adapter normalize", () => {
   const adapter = new GogAdapter();
 
-  it("normalizes a raw gog message", async () => {
+  it("normalizes a raw gog message (real gog CLI shape)", async () => {
     const raw = JSON.parse(
       await readFile(join(rawFixtures, "gog-message.json"), "utf-8")
     );
@@ -43,9 +43,10 @@ describe("Gog adapter normalize", () => {
     expect(msg.provider).toBe("gog");
     expect(msg.account).toBe("personal");
     expect(msg.subject).toBe("Invoice #1234");
+    expect(msg.from[0].name).toBe("Billing");
     expect(msg.from[0].address).toBe("billing@example.com");
-    expect(msg.flags.read).toBe(true);
-    expect(msg.attachments).toHaveLength(1);
+    expect(msg.flags.read).toBe(true); // no UNREAD label
+    expect(msg.bodyText).toContain("invoice for March");
     expect(msg.refs.providerThreadId).toBe("gog-thread-50");
   });
 });

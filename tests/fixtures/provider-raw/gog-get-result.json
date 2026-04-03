@@ -1,0 +1,30 @@
+{
+  "body": "Hi there,\n\nPlease review the attached project timeline and let me know your thoughts.\n\nThanks,\nJane",
+  "headers": {
+    "from": "Jane Smith <jane@example.org>",
+    "to": "user@example.com",
+    "cc": "team@example.com",
+    "bcc": "",
+    "date": "Thu, 03 Apr 2026 16:15:00 +0000 (UTC)",
+    "subject": "Re: Project timeline discussion"
+  },
+  "message": {
+    "historyId": "12345678",
+    "id": "def789ghi012",
+    "threadId": "def789ghi012",
+    "internalDate": "1775234100000",
+    "labelIds": ["UNREAD", "IMPORTANT", "INBOX"],
+    "snippet": "Hi there, Please review the attached project timeline and let me know your thoughts.",
+    "sizeEstimate": 4096,
+    "payload": {
+      "body": {},
+      "headers": [
+        { "name": "From", "value": "Jane Smith <jane@example.org>" },
+        { "name": "To", "value": "user@example.com" },
+        { "name": "Cc", "value": "team@example.com" },
+        { "name": "Subject", "value": "Re: Project timeline discussion" },
+        { "name": "Date", "value": "Thu, 03 Apr 2026 16:15:00 +0000 (UTC)" }
+      ]
+    }
+  }
+}

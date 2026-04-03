@@ -11,6 +11,8 @@ export type {
   ClassifierResult,
   ClassifiedMessage,
   TriageResult,
+  TriagePlan,
+  PlannedAction,
 } from "./core/types.js";
 
 export type {
@@ -36,7 +38,7 @@ export {
 export { emit, emitJson, emitJsonl, log, warn } from "./core/emit.js";
 export type { OutputFormat } from "./core/emit.js";
 
-export { loadConfig } from "./config/load.js";
+export { loadConfig, resolveSource, findWorkflowForSource } from "./config/load.js";
 export type { FlowmeshConfig, AccountConfig, WorkflowConfig } from "./config/load.js";
 
 export { registerAllProviders } from "./providers/index.js";

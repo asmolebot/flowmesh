@@ -48,6 +48,7 @@ workflow
   .option("--limit <n>", "Max messages to fetch", parseInt)
   .option("--format <fmt>", "Output format: json or jsonl", "json")
   .option("--json", "Shorthand for --format json")
+  .option("--dry-run", "Show planned actions without executing mutations")
   .option("--config <path>", "Path to config file")
   .action(async (opts) => {
     try {
@@ -61,6 +62,7 @@ workflow
         since: opts.since,
         limit: opts.limit,
         format: (opts.json ? "json" : opts.format) as OutputFormat,
+        dryRun: opts.dryRun,
         config,
       });
     } catch (err) {
