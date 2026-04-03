@@ -1,0 +1,14 @@
+{
+  "id": "42",
+  "folder": "INBOX",
+  "subject": "Weekly sync notes",
+  "from": "sender@example.com",
+  "to": ["recipient@example.com"],
+  "cc": [],
+  "date": "2026-04-02T10:30:00Z",
+  "preview": "Here are the notes from today's sync...",
+  "body": "Hi,\n\nHere are the notes from today's sync.\n\n- Item 1\n- Item 2\n\nBest,\nSender",
+  "flags": ["new"],
+  "attachments": [],
+  "messageId": "<msg-42@example.com>"
+}

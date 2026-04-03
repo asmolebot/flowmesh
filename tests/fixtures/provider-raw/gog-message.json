@@ -1,0 +1,19 @@
+{
+  "id": "gog-msg-99",
+  "threadId": "gog-thread-50",
+  "mailbox": "INBOX",
+  "subject": "Invoice #1234",
+  "from": [{ "name": "Billing", "address": "billing@example.com" }],
+  "to": [{ "address": "user@example.com" }],
+  "cc": [],
+  "receivedAt": "2026-04-01T08:00:00Z",
+  "snippet": "Your invoice for March is attached.",
+  "bodyText": "Your invoice for March is attached.\n\nTotal: $150.00",
+  "labels": ["inbox"],
+  "attachments": [
+    { "filename": "invoice-1234.pdf", "mimeType": "application/pdf", "size": 25600 }
+  ],
+  "read": true,
+  "starred": false,
+  "archived": false
+}

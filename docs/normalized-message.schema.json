@@ -2,19 +2,20 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.com/flowmesh/normalized-message.schema.json",
   "title": "NormalizedMessage",
+  "description": "Common envelope shape for all provider messages in flowmesh",
   "type": "object",
-  "required": ["id", "provider", "account", "subject", "receivedAt"],
+  "required": [
+    "id", "provider", "account", "subject", "receivedAt",
+    "from", "to", "cc", "snippet", "labels", "attachments",
+    "flags", "refs", "meta"
+  ],
   "properties": {
     "id": { "type": "string" },
     "provider": { "type": "string" },
     "account": { "type": "string" },
-    "mailbox": { "type": ["string", "null"] },
-    "threadId": { "type": ["string", "null"] },
+    "mailbox": { "type": "string" },
+    "threadId": { "type": "string" },
     "subject": { "type": "string" },
-    "receivedAt": { "type": "string", "format": "date-time" },
-    "snippet": { "type": ["string", "null"] },
-    "bodyText": { "type": ["string", "null"] },
-    "bodyHtml": { "type": ["string", "null"] },
     "from": {
       "type": "array",
       "items": { "$ref": "#/$defs/address" }
@@ -27,6 +28,13 @@
       "type": "array",
       "items": { "$ref": "#/$defs/address" }
     },
+    "receivedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "snippet": { "type": "string" },
+    "bodyText": { "type": ["string", "null"] },
+    "bodyHtml": { "type": ["string", "null"] },
     "labels": {
       "type": "array",
       "items": { "type": "string" }
@@ -35,24 +43,14 @@
       "type": "array",
       "items": { "$ref": "#/$defs/attachment" }
     },
-    "flags": {
-      "type": "object",
-      "properties": {
-        "read": { "type": "boolean" },
-        "starred": { "type": "boolean" },
-        "archived": { "type": "boolean" }
-      },
-      "additionalProperties": true
-    },
-    "refs": {
-      "type": "object",
-      "additionalProperties": true
-    },
+    "flags": { "$ref": "#/$defs/flags" },
+    "refs": { "$ref": "#/$defs/refs" },
     "meta": {
       "type": "object",
       "additionalProperties": true
     }
   },
+  "additionalProperties": false,
   "$defs": {
     "address": {
       "type": "object",
@@ -65,14 +63,32 @@
     },
     "attachment": {
       "type": "object",
-      "required": ["filename"],
+      "required": ["filename", "mimeType"],
       "properties": {
         "filename": { "type": "string" },
-        "mimeType": { "type": ["string", "null"] },
+        "mimeType": { "type": "string" },
         "size": { "type": ["integer", "null"] }
       },
-      "additionalProperties": true
+      "additionalProperties": false
+    },
+    "flags": {
+      "type": "object",
+      "required": ["read", "starred", "archived"],
+      "properties": {
+        "read": { "type": "boolean" },
+        "starred": { "type": "boolean" },
+        "archived": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "refs": {
+      "type": "object",
+      "required": ["providerId"],
+      "properties": {
+        "providerId": { "type": "string" },
+        "providerThreadId": { "type": "string" }
+      },
+      "additionalProperties": false
     }
-  },
-  "additionalProperties": true
+  }
 }

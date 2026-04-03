@@ -1,0 +1,43 @@
+{
+  "name": "flowmesh",
+  "version": "0.1.0",
+  "description": "Generic workflow/inbox automation toolkit",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "flowmesh": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev": "tsx src/cli.ts"
+  },
+  "keywords": [
+    "email",
+    "inbox",
+    "automation",
+    "workflow",
+    "triage"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "commander": "^13.1.0",
+    "yaml": "^2.7.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.15.2",
+    "eslint": "^9.25.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.58.0",
+    "vitest": "^3.1.2"
+  }
+}

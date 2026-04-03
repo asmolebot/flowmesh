@@ -1,0 +1,29 @@
+{
+  "id": "msg-001",
+  "provider": "himalaya",
+  "account": "work",
+  "mailbox": "INBOX",
+  "threadId": "th-100",
+  "subject": "Quarterly review",
+  "from": [{ "name": "Alex", "address": "alex@example.com" }],
+  "to": [{ "name": "Ops Team", "address": "ops@example.com" }],
+  "cc": [],
+  "receivedAt": "2026-04-03T14:00:00Z",
+  "snippet": "Can you review the attached plan before Friday?",
+  "bodyText": "Hi team,\n\nCan you review the attached plan before Friday?\n\nThanks,\nAlex",
+  "bodyHtml": null,
+  "labels": ["inbox", "important"],
+  "attachments": [
+    { "filename": "plan.pdf", "mimeType": "application/pdf", "size": 48192 }
+  ],
+  "flags": {
+    "read": false,
+    "starred": true,
+    "archived": false
+  },
+  "refs": {
+    "providerId": "abc123",
+    "providerThreadId": "th-456"
+  },
+  "meta": {}
+}
