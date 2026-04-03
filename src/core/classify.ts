@@ -23,6 +23,7 @@
 import { spawn } from "node:child_process";
 import type { ClassifierResult, NormalizedMessage } from "./types.js";
 import { warn } from "./emit.js";
+import { createRulesClassifier } from "./rules-classifier.js";
 
 export interface ClassifierConfig {
   kind: "shell" | "rules" | "llm" | "mcp" | "passthrough";
@@ -163,6 +164,7 @@ export function createClassifier(config: ClassifierConfig): Classifier {
     case "passthrough":
       return new PassthroughClassifier();
     case "rules":
+      return createRulesClassifier(config.options);
     case "llm":
     case "mcp":
       // Future backends — fall through to passthrough for now

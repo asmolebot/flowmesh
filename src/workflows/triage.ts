@@ -105,9 +105,11 @@ function buildPlan(
         receivedAt: entry.message.receivedAt,
         bucket,
         category: entry.classification.category,
+        priority: entry.classification.priority,
         confidence: entry.classification.confidence,
         reason: entry.classification.reason,
         action,
+        provider: entry.message.provider,
       });
     }
   }
@@ -202,9 +204,14 @@ export async function runTriage(options: TriageOptions): Promise<void> {
     buckets[bucket].push(entry);
   }
 
+  const classifierLabel = classifierName ?? "passthrough";
+
   const result: TriageResult = {
+    schemaVersion: "1",
     timestamp: new Date().toISOString(),
     source: options.source ?? `${providerName}/${account}`,
+    provider: providerName,
+    account,
     totalMessages: messages.length,
     buckets,
     summary: {
@@ -214,6 +221,7 @@ export async function runTriage(options: TriageOptions): Promise<void> {
       archiveCandidate: buckets["archive-candidate"].length,
       noise: buckets["noise"].length,
     },
+    classifierUsed: classifierLabel,
   };
 
   // Add dry-run plan if requested

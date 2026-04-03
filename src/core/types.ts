@@ -70,10 +70,19 @@ export interface ClassifiedMessage {
 
 /**
  * Triage workflow output — grouped classified messages.
+ *
+ * The schemaVersion field allows downstream consumers to detect format changes.
+ * The provider/account/mailbox metadata enables automation routing.
  */
 export interface TriageResult {
+  /** Schema version for this output format. Bump on breaking changes. */
+  schemaVersion: "1";
   timestamp: string;
   source: string;
+  /** Provider that produced the messages. */
+  provider: string;
+  /** Account used for the pull. */
+  account: string;
   totalMessages: number;
   buckets: Record<string, ClassifiedMessage[]>;
   summary: {
@@ -83,6 +92,8 @@ export interface TriageResult {
     archiveCandidate: number;
     noise: number;
   };
+  /** Classifier used (name or "passthrough"). */
+  classifierUsed: string;
   /** Dry-run action plan for archive/noise candidates (when --dry-run is used) */
   plan?: TriagePlan;
 }
@@ -98,9 +109,12 @@ export interface PlannedAction {
   receivedAt: string;
   bucket: string;
   category: string;
+  priority: ClassifierResult["priority"];
   confidence: number;
   reason: string;
   action: "archive" | "trash" | "skip";
+  /** Provider name for downstream mutation dispatch. */
+  provider: string;
 }
 
 /**

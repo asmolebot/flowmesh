@@ -1,0 +1,19 @@
+{
+  "uid": 1547,
+  "id": "1547",
+  "mailbox": "INBOX",
+  "subject": "Q2 budget review attached",
+  "from": [{ "name": "Finance Team", "address": "finance@example.com" }],
+  "to": [{ "address": "user@example.com" }],
+  "cc": [{ "name": "CFO Office", "address": "cfo@example.com" }],
+  "date": "2026-04-02T09:15:00Z",
+  "snippet": "Please review the attached Q2 budget proposal and confirm by Friday.",
+  "bodyText": "Hi,\n\nPlease review the attached Q2 budget proposal and confirm by Friday.\n\nRegards,\nFinance Team",
+  "flags": ["\\Seen"],
+  "seen": true,
+  "flagged": false,
+  "attachments": [
+    { "filename": "q2-budget.xlsx", "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "size": 24576 }
+  ],
+  "messageId": "<budget-review-q2@example.com>"
+}

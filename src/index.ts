@@ -35,6 +35,17 @@ export {
   createClassifier,
 } from "./core/classify.js";
 
+export {
+  RulesClassifier,
+  createRulesClassifier,
+  DEFAULT_RULES,
+} from "./core/rules-classifier.js";
+export type {
+  ClassificationRule,
+  RuleMatch,
+  RuleResultSpec,
+} from "./core/rules-classifier.js";
+
 export { emit, emitJson, emitJsonl, log, warn } from "./core/emit.js";
 export type { OutputFormat } from "./core/emit.js";
 
@@ -42,3 +53,8 @@ export { loadConfig, resolveSource, findWorkflowForSource } from "./config/load.
 export type { FlowmeshConfig, AccountConfig, WorkflowConfig } from "./config/load.js";
 
 export { registerAllProviders } from "./providers/index.js";
+
+export { GogError } from "./providers/gog.js";
+export type { GogErrorCode } from "./providers/gog.js";
+export { ImapError, extractImapConfig, normalizeImapMessage } from "./providers/imap.js";
+export type { ImapErrorCode, ImapConnectionConfig } from "./providers/imap.js";

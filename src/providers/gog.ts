@@ -3,12 +3,18 @@
  *
  * Uses `gog gmail messages search` for list() and `gog gmail get` for get().
  * All account/query parameters are passed through from config/CLI args.
+ *
+ * Hardened for real-world usage:
+ *   - Detects missing gog binary (ENOENT)
+ *   - Handles non-JSON output (auth prompts, HTML errors)
+ *   - Structured error classification for callers
+ *   - Timeout and stderr forwarding
  */
 
 import { execFile } from "node:child_process";
 import type { NormalizedMessage, Address } from "../core/types.js";
 import type { ListParams, ProviderAdapter } from "../core/provider.js";
-import { log, warn } from "../core/emit.js";
+import { log } from "../core/emit.js";
 
 /** Shape returned by `gog gmail messages search --json` */
 export interface GogSearchResult {
@@ -53,6 +59,26 @@ export interface GogGetResult {
     };
   };
 }
+
+/** Structured error from the gog adapter so callers can react programmatically. */
+export class GogError extends Error {
+  constructor(
+    message: string,
+    public readonly code: GogErrorCode,
+    public readonly detail?: string
+  ) {
+    super(message);
+    this.name = "GogError";
+  }
+}
+
+export type GogErrorCode =
+  | "NOT_INSTALLED"   // gog binary not found on PATH
+  | "AUTH_REQUIRED"   // gog output suggests re-authentication
+  | "TIMEOUT"         // command exceeded deadline
+  | "INVALID_OUTPUT"  // stdout is not valid JSON
+  | "COMMAND_FAILED"  // non-zero exit with stderr
+  | "EMPTY_RESPONSE"; // no stdout produced
 
 /**
  * Parse "Name <email>" or bare "email" into an Address.
@@ -106,21 +132,120 @@ function parseDate(raw: string): string {
   return new Date().toISOString();
 }
 
+/** Heuristic: does the gog output look like an auth/login prompt? */
+function looksLikeAuthError(text: string): boolean {
+  const lower = text.toLowerCase();
+  return (
+    lower.includes("authorization") ||
+    lower.includes("authenticate") ||
+    lower.includes("login required") ||
+    lower.includes("oauth") ||
+    lower.includes("token expired") ||
+    lower.includes("credentials")
+  );
+}
+
+const GOG_TIMEOUT_MS = 60_000;
+const GOG_MAX_BUFFER = 10 * 1024 * 1024;
+
 function execGog(args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
-    execFile("gog", args, { timeout: 60_000, maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
-      if (stderr) {
-        for (const line of stderr.split("\n").filter(Boolean)) {
-          log(`gog: ${line}`);
+    execFile(
+      "gog",
+      args,
+      { timeout: GOG_TIMEOUT_MS, maxBuffer: GOG_MAX_BUFFER },
+      (err, stdout, stderr) => {
+        if (stderr) {
+          for (const line of stderr.split("\n").filter(Boolean)) {
+            log(`gog: ${line}`);
+          }
         }
+        if (err) {
+          // Detect missing binary
+          if ((err as NodeJS.ErrnoException).code === "ENOENT") {
+            reject(
+              new GogError(
+                "gog binary not found on PATH. Install gog or check your $PATH.",
+                "NOT_INSTALLED"
+              )
+            );
+            return;
+          }
+          // Detect timeout
+          if (err.killed || err.message?.includes("TIMEOUT")) {
+            reject(
+              new GogError(
+                `gog command timed out after ${GOG_TIMEOUT_MS / 1000}s`,
+                "TIMEOUT",
+                args.join(" ")
+              )
+            );
+            return;
+          }
+          // Check for auth issues in stderr or stdout
+          const combined = (stderr ?? "") + (stdout ?? "");
+          if (looksLikeAuthError(combined)) {
+            reject(
+              new GogError(
+                "gog requires authentication. Run `gog auth` or check credentials.",
+                "AUTH_REQUIRED",
+                combined.slice(0, 500)
+              )
+            );
+            return;
+          }
+          reject(
+            new GogError(
+              `gog command failed (exit): ${err.message}`,
+              "COMMAND_FAILED",
+              stderr?.slice(0, 500)
+            )
+          );
+          return;
+        }
+        resolve(stdout);
       }
-      if (err) {
-        reject(new Error(`gog command failed: ${err.message}`));
-        return;
-      }
-      resolve(stdout);
-    });
+    );
   });
+}
+
+/**
+ * Attempt to parse JSON from gog stdout, raising structured errors
+ * for non-JSON responses (HTML error pages, auth prompts, empty output).
+ */
+function parseGogJson<T>(stdout: string, context: string): T {
+  const trimmed = stdout.trim();
+  if (!trimmed) {
+    throw new GogError(
+      `gog produced empty output for ${context}`,
+      "EMPTY_RESPONSE"
+    );
+  }
+  // Detect HTML (error pages from API gateway, etc.)
+  if (trimmed.startsWith("<") || trimmed.startsWith("<!")) {
+    throw new GogError(
+      `gog returned HTML instead of JSON for ${context} — possible API/proxy error`,
+      "INVALID_OUTPUT",
+      trimmed.slice(0, 300)
+    );
+  }
+  // Detect auth prompts in stdout
+  if (looksLikeAuthError(trimmed)) {
+    throw new GogError(
+      "gog requires authentication. Run `gog auth` or check credentials.",
+      "AUTH_REQUIRED",
+      trimmed.slice(0, 300)
+    );
+  }
+  try {
+    return JSON.parse(trimmed) as T;
+  } catch {
+    throw new GogError(
+      `gog output is not valid JSON for ${context}`,
+      "INVALID_OUTPUT",
+      trimmed.slice(0, 300)
+    );
+  }
 }
 
 export class GogAdapter implements ProviderAdapter {
@@ -140,14 +265,7 @@ export class GogAdapter implements ProviderAdapter {
     log(`Executing: gog ${args.join(" ")}`);
     const stdout = await execGog(args);
 
-    let parsed: GogSearchResult;
-    try {
-      parsed = JSON.parse(stdout);
-    } catch {
-      warn("Failed to parse gog output as JSON");
-      return [];
-    }
-
+    const parsed = parseGogJson<GogSearchResult>(stdout, "messages search");
     return parsed.messages ?? [];
   }
 
@@ -159,7 +277,7 @@ export class GogAdapter implements ProviderAdapter {
 
     log(`Executing: gog ${args.join(" ")}`);
     const stdout = await execGog(args);
-    return JSON.parse(stdout) as GogGetResult;
+    return parseGogJson<GogGetResult>(stdout, `get ${id}`);
   }
 
   normalize(raw: unknown, account: string): NormalizedMessage {

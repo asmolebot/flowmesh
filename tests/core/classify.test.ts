@@ -136,8 +136,14 @@ describe("createClassifier", () => {
     ).toThrow(/Unknown classifier kind/);
   });
 
-  it("falls back to passthrough for unimplemented kinds", () => {
+  it("creates a rules classifier for 'rules' kind", () => {
     const c = createClassifier({ kind: "rules" });
+    // rules kind is now implemented, should not be PassthroughClassifier
+    expect(c).not.toBeInstanceOf(PassthroughClassifier);
+  });
+
+  it("falls back to passthrough for unimplemented kinds", () => {
+    const c = createClassifier({ kind: "llm" });
     expect(c).toBeInstanceOf(PassthroughClassifier);
   });
 });
