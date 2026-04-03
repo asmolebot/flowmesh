@@ -1,0 +1,16 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release-stub:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Release stub
+        run: |
+          echo "TODO: wire npm/ClaWHub release once package shape stabilizes"

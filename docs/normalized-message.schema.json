@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/flowmesh/normalized-message.schema.json",
+  "title": "NormalizedMessage",
+  "type": "object",
+  "required": ["id", "provider", "account", "subject", "receivedAt"],
+  "properties": {
+    "id": { "type": "string" },
+    "provider": { "type": "string" },
+    "account": { "type": "string" },
+    "mailbox": { "type": ["string", "null"] },
+    "threadId": { "type": ["string", "null"] },
+    "subject": { "type": "string" },
+    "receivedAt": { "type": "string", "format": "date-time" },
+    "snippet": { "type": ["string", "null"] },
+    "bodyText": { "type": ["string", "null"] },
+    "bodyHtml": { "type": ["string", "null"] },
+    "from": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/address" }
+    },
+    "to": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/address" }
+    },
+    "cc": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/address" }
+    },
+    "labels": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "attachments": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/attachment" }
+    },
+    "flags": {
+      "type": "object",
+      "properties": {
+        "read": { "type": "boolean" },
+        "starred": { "type": "boolean" },
+        "archived": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "refs": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "address": {
+      "type": "object",
+      "required": ["address"],
+      "properties": {
+        "name": { "type": ["string", "null"] },
+        "address": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "attachment": {
+      "type": "object",
+      "required": ["filename"],
+      "properties": {
+        "filename": { "type": "string" },
+        "mimeType": { "type": ["string", "null"] },
+        "size": { "type": ["integer", "null"] }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

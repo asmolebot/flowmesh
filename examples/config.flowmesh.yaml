@@ -1,0 +1,41 @@
+accounts:
+  personal-gmail:
+    provider: gog
+    identity: personal
+    queryDefaults:
+      inbox: "label:inbox"
+
+  work-himalaya:
+    provider: himalaya
+    account: work
+    mailboxDefaults:
+      triage: "Inbox"
+
+  generic-imap:
+    provider: imap
+    host: imap.example.com
+    port: 993
+    username: user@example.com
+    authRef: op://mail/generic-imap
+
+  local-apple-mail:
+    provider: apple-mail
+    profile: default
+
+  inbox-mcp:
+    provider: mcp
+    server: inbox-tools
+    tool: list_messages
+
+classifiers:
+  default:
+    kind: shell
+    command: ["scripts/classify-default.sh"]
+
+workflows:
+  triage-default:
+    source: personal-gmail
+    classifier: default
+    routing:
+      archiveCategories: ["newsletter", "receipt"]
+      escalateCategories: ["urgent", "reply-needed"]

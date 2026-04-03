@@ -1,0 +1,27 @@
+language: en-US
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  review_status: true
+  poem: false
+  collapse_walkthrough: false
+
+  path_instructions:
+    - path: "src/**"
+      instructions: |
+        flowmesh is a provider-agnostic workflow/inbox automation toolkit.
+        Focus review on:
+        - generic abstractions instead of personal/provider-specific leakage
+        - JSON/JSONL automation safety
+        - dry-run semantics for mutations
+        - schema/type consistency
+        - CLI ergonomics and deterministic behavior
+    - path: "docs/**"
+      instructions: |
+        Keep docs practical and implementation-aligned.
+        Flag claims that drift from actual code.
+    - path: "tests/**"
+      instructions: |
+        Prefer fixture-based tests and sanitized examples. No live secrets or user-specific config.

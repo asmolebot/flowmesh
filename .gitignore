@@ -1,0 +1,34 @@
+# Node / TS
+node_modules/
+dist/
+coverage/
+.vite/
+*.tsbuildinfo
+
+# Logs / temp
+*.log
+.tmp/
+tmp/
+.DS_Store
+
+# Local env / secrets
+.env
+.env.*
+!.env.example
+secrets/
+config.local.*
+examples/*.local.yaml
+
+# Python / misc adapter experiments
+__pycache__/
+*.pyc
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Runtime output
+out/
+artifacts/
+.cache/
