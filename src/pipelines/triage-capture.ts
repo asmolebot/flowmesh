@@ -1,11 +1,9 @@
 /**
- * workflow triage — fetch, normalize, classify, and bucket messages.
+ * Triage capture — runs the flowmesh triage workflow and returns
+ * the TriageResult as a value (instead of emitting to stdout).
  *
- * Output: structured JSON with messages grouped into:
- *   urgent, reply-needed, fyi, archive-candidate, noise
- *
- * With --dry-run: also emits a plan of what actions would be taken
- * on archive-candidate and noise messages.
+ * This is the bridge between the existing triage workflow and the
+ * pilot runner, which needs the result as data for comparison.
  */
 
 import { getProvider } from "../core/provider.js";
@@ -14,7 +12,7 @@ import {
   PassthroughClassifier,
   type Classifier,
 } from "../core/classify.js";
-import { emit, log, type OutputFormat } from "../core/emit.js";
+import { log } from "../core/emit.js";
 import {
   resolveSource,
   findWorkflowForSource,
@@ -23,12 +21,10 @@ import {
 import type {
   ClassifiedMessage,
   NormalizedMessage,
-  PlannedAction,
-  TriagePlan,
   TriageResult,
 } from "../core/types.js";
 
-export interface TriageOptions {
+export interface TriageCaptureOptions {
   provider?: string;
   account?: string;
   source?: string;
@@ -36,7 +32,6 @@ export interface TriageOptions {
   query?: string;
   since?: string;
   limit?: number;
-  format?: OutputFormat;
   dryRun?: boolean;
   config: FlowmeshConfig;
 }
@@ -71,65 +66,13 @@ function bucketForCategory(category: string): string {
 }
 
 /**
- * Determine the planned action for a message based on its bucket.
+ * Run triage and return the result as data (no stdout emission).
  */
-function planAction(bucket: string): "archive" | "trash" | "skip" {
-  switch (bucket) {
-    case "archive-candidate":
-      return "archive";
-    case "noise":
-      return "trash";
-    default:
-      return "skip";
-  }
-}
+export async function runTriageCapture(
+  options: TriageCaptureOptions
+): Promise<TriageResult> {
+  const { config } = options;
 
-/**
- * Build a dry-run plan from classified/bucketed messages.
- */
-function buildPlan(
-  buckets: Record<string, ClassifiedMessage[]>
-): TriagePlan {
-  const actions: PlannedAction[] = [];
-
-  for (const [bucket, entries] of Object.entries(buckets)) {
-    const action = planAction(bucket);
-    if (action === "skip") continue;
-
-    for (const entry of entries) {
-      actions.push({
-        messageId: entry.message.id,
-        threadId: entry.message.threadId,
-        subject: entry.message.subject,
-        from: entry.message.from[0]?.address ?? "unknown",
-        receivedAt: entry.message.receivedAt,
-        bucket,
-        category: entry.classification.category,
-        priority: entry.classification.priority,
-        confidence: entry.classification.confidence,
-        reason: entry.classification.reason,
-        action,
-        provider: entry.message.provider,
-      });
-    }
-  }
-
-  return {
-    dryRun: true,
-    actions,
-    summary: {
-      archive: actions.filter((a) => a.action === "archive").length,
-      trash: actions.filter((a) => a.action === "trash").length,
-      skip: 0,
-      total: actions.length,
-    },
-  };
-}
-
-export async function runTriage(options: TriageOptions): Promise<void> {
-  const { config, format = "json" } = options;
-
-  // Resolve source -> provider + account (with config-driven defaults)
   let providerName = options.provider;
   let account = options.account ?? "default";
   let defaultQuery: string | undefined;
@@ -162,7 +105,6 @@ export async function runTriage(options: TriageOptions): Promise<void> {
 
   const provider = getProvider(providerName);
 
-  // Resolve classifier from workflow config
   let classifier: Classifier;
   const workflowConfig = options.source
     ? findWorkflowForSource(config, options.source)
@@ -175,7 +117,6 @@ export async function runTriage(options: TriageOptions): Promise<void> {
     classifier = new PassthroughClassifier();
   }
 
-  // Pull — merge CLI query with config defaults
   const query = options.query ?? defaultQuery;
   const mailbox = options.mailbox ?? defaultMailbox;
   const limit = options.limit ?? configMaxResults;
@@ -189,13 +130,11 @@ export async function runTriage(options: TriageOptions): Promise<void> {
     limit,
   });
 
-  // Normalize
   const messages: NormalizedMessage[] = rawItems.map((raw) =>
     provider.normalize(raw, account)
   );
   log(`Normalized ${messages.length} messages`);
 
-  // Classify + bucket
   const buckets: Record<string, ClassifiedMessage[]> = {};
   for (const b of TRIAGE_BUCKETS) {
     buckets[b] = [];
@@ -204,14 +143,13 @@ export async function runTriage(options: TriageOptions): Promise<void> {
   for (const message of messages) {
     const classification = await classifier.classify(message);
     const bucket = bucketForCategory(classification.category);
-    const entry: ClassifiedMessage = { message, classification };
     if (!buckets[bucket]) buckets[bucket] = [];
-    buckets[bucket].push(entry);
+    buckets[bucket].push({ message, classification });
   }
 
   const classifierLabel = classifierName ?? "passthrough";
 
-  const result: TriageResult = {
+  return {
     schemaVersion: "1",
     timestamp: new Date().toISOString(),
     source: options.source ?? `${providerName}/${account}`,
@@ -228,14 +166,4 @@ export async function runTriage(options: TriageOptions): Promise<void> {
     },
     classifierUsed: classifierLabel,
   };
-
-  // Add dry-run plan if requested
-  if (options.dryRun) {
-    result.plan = buildPlan(buckets);
-    log(
-      `Dry-run plan: ${result.plan.summary.archive} archive, ${result.plan.summary.trash} trash`
-    );
-  }
-
-  emit(result, format);
 }

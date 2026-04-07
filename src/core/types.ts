@@ -130,3 +130,58 @@ export interface TriagePlan {
     total: number;
   };
 }
+
+// --- Pilot types ---
+
+/**
+ * Per-message diff between two triage runs (flowmesh vs legacy).
+ */
+export interface MessageDiff {
+  messageId: string;
+  subject: string;
+  from: string;
+  flowmesh?: { bucket: string; category: string; priority: string; confidence: number };
+  legacy?: { bucket: string; category: string; priority: string; confidence: number };
+  match: boolean;
+}
+
+/**
+ * Summary-level comparison between flowmesh and legacy triage.
+ */
+export interface ComparisonSummary {
+  totalFlowmesh: number;
+  totalLegacy: number;
+  matched: number;
+  mismatched: number;
+  flowmeshOnly: number;
+  legacyOnly: number;
+  bucketDiffs: Record<string, { flowmesh: number; legacy: number }>;
+}
+
+/**
+ * Full comparison report — output of `flowmesh pilot compare`.
+ */
+export interface ComparisonReport {
+  schemaVersion: "1";
+  timestamp: string;
+  source: string;
+  engine: "compare";
+  flowmeshClassifier: string;
+  legacySource: string;
+  summary: ComparisonSummary;
+  diffs: MessageDiff[];
+}
+
+/**
+ * Result of a pilot run — wraps either a single triage result,
+ * or a comparison of flowmesh vs legacy.
+ */
+export interface PilotResult {
+  schemaVersion: "1";
+  timestamp: string;
+  source: string;
+  engine: "flowmesh" | "legacy" | "compare";
+  flowmesh?: TriageResult;
+  legacy?: TriageResult;
+  comparison?: ComparisonReport;
+}

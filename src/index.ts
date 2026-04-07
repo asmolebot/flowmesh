@@ -58,3 +58,19 @@ export { GogError } from "./providers/gog.js";
 export type { GogErrorCode } from "./providers/gog.js";
 export { ImapError, extractImapConfig, normalizeImapMessage } from "./providers/imap.js";
 export type { ImapErrorCode, ImapConnectionConfig } from "./providers/imap.js";
+
+// Pilot / comparison
+export type {
+  MessageDiff,
+  ComparisonSummary,
+  ComparisonReport,
+  PilotResult,
+} from "./core/types.js";
+
+export { compareTriageResults } from "./pipelines/compare.js";
+export { captureLegacy, parseLegacyOutput } from "./pipelines/legacy-capture.js";
+export type { LegacyCaptureOptions } from "./pipelines/legacy-capture.js";
+export { runTriageCapture } from "./pipelines/triage-capture.js";
+export type { TriageCaptureOptions } from "./pipelines/triage-capture.js";
+export { runPilot } from "./pipelines/pilot.js";
+export type { PilotEngine, PilotOptions } from "./pipelines/pilot.js";

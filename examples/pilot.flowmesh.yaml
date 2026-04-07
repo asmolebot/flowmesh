@@ -1,0 +1,46 @@
+# Example pilot config — run flowmesh triage alongside legacy and compare.
+#
+# Usage:
+#   # Compare mode: run both engines, diff outputs
+#   flowmesh pilot run --engine compare \
+#     --source personal-gmail \
+#     --legacy-cmd "your-legacy-triage-script --json" \
+#     --config examples/pilot.flowmesh.yaml --json
+#
+#   # Flowmesh-only (new path)
+#   flowmesh pilot run --engine flowmesh \
+#     --source personal-gmail \
+#     --config examples/pilot.flowmesh.yaml --json
+#
+#   # Legacy-only (fallback)
+#   flowmesh pilot run --engine legacy \
+#     --legacy-file /tmp/legacy-triage-output.json --json
+#
+#   # Offline comparison of two saved outputs
+#   flowmesh pilot compare /tmp/flowmesh-out.json /tmp/legacy-out.json --json
+
+accounts:
+  chris.lohl@gmail.com:
+    provider: gog
+    defaultQuery: "in:inbox newer_than:2d"
+    maxResults: 100
+
+  work-imap:
+    provider: imap
+    host: imap.example.com
+    port: 993
+    username: user@example.com
+    defaultMailbox: INBOX
+
+classifiers:
+  default-rules:
+    kind: rules
+    # Uses built-in DEFAULT_RULES (noreply, newsletter, receipt, urgent, etc.)
+
+workflows:
+  triage-pilot:
+    source: personal-gmail
+    classifier: default-rules
+    routing:
+      archiveCategories: ["newsletter", "receipt", "automated", "notification"]
+      escalateCategories: ["urgent", "reply-needed"]
