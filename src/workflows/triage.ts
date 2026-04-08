@@ -20,6 +20,11 @@ import {
   findWorkflowForSource,
   type FlowmeshConfig,
 } from "../config/load.js";
+import {
+  filterMessagesWithState,
+  loadTriageState,
+  persistTriageState,
+} from "../core/triage-state.js";
 import type {
   ClassifiedMessage,
   NormalizedMessage,
@@ -38,6 +43,9 @@ export interface TriageOptions {
   limit?: number;
   format?: OutputFormat;
   dryRun?: boolean;
+  statePath?: string;
+  includeRead?: boolean;
+  includePreviouslyNotified?: boolean;
   config: FlowmeshConfig;
 }
 
@@ -190,10 +198,27 @@ export async function runTriage(options: TriageOptions): Promise<void> {
   });
 
   // Normalize
-  const messages: NormalizedMessage[] = rawItems.map((raw) =>
+  const normalizedMessages: NormalizedMessage[] = rawItems.map((raw) =>
     provider.normalize(raw, account)
   );
-  log(`Normalized ${messages.length} messages`);
+  log(`Normalized ${normalizedMessages.length} messages`);
+
+  const triageState = await loadTriageState({
+    path: options.statePath,
+    suppressRead: options.includeRead ? false : true,
+    suppressPreviouslyNotified: options.includePreviouslyNotified ? false : true,
+  });
+  const filtered = filterMessagesWithState(normalizedMessages, triageState);
+  const messages = filtered.messages;
+
+  if (filtered.suppressedReadCount > 0) {
+    log(`Suppressed ${filtered.suppressedReadCount} read messages`);
+  }
+  if (filtered.suppressedPreviouslyNotifiedCount > 0) {
+    log(
+      `Suppressed ${filtered.suppressedPreviouslyNotifiedCount} previously notified messages`
+    );
+  }
 
   // Classify + bucket
   const buckets: Record<string, ClassifiedMessage[]> = {};
@@ -226,6 +251,14 @@ export async function runTriage(options: TriageOptions): Promise<void> {
       archiveCandidate: buckets["archive-candidate"].length,
       noise: buckets["noise"].length,
     },
+    state: {
+      path: triageState.path,
+      suppressRead: triageState.suppressRead,
+      suppressedReadCount: filtered.suppressedReadCount,
+      suppressPreviouslyNotified: triageState.suppressPreviouslyNotified,
+      suppressedPreviouslyNotifiedCount: filtered.suppressedPreviouslyNotifiedCount,
+      notifiedMessageIds: messages.map((message) => message.id),
+    },
     classifierUsed: classifierLabel,
   };
 
@@ -235,6 +268,8 @@ export async function runTriage(options: TriageOptions): Promise<void> {
     log(
       `Dry-run plan: ${result.plan.summary.archive} archive, ${result.plan.summary.trash} trash`
     );
+  } else {
+    await persistTriageState(triageState, messages);
   }
 
   emit(result, format);

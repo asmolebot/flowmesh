@@ -1,3 +1,6 @@
+import { mkdtemp, readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { runTriage } from "../../src/workflows/triage.js";
 import { registerProvider } from "../../src/core/provider.js";
@@ -51,10 +54,18 @@ const mockMessages: NormalizedMessage[] = [
   makeMessage({ id: "m3", subject: "Meeting notes" }),
 ];
 
+const mockMessagesWithRead: NormalizedMessage[] = [
+  makeMessage({ id: "m1", subject: "Urgent: server down" }),
+  makeMessage({ id: "m2", subject: "Weekly newsletter", flags: { read: true, starred: false, archived: false } }),
+  makeMessage({ id: "m3", subject: "Meeting notes" }),
+];
+
+let currentMessages = mockMessages;
+
 const mockProvider: ProviderAdapter = {
   name: "mock",
   async list(_params: ListParams) {
-    return mockMessages;
+    return currentMessages;
   },
   normalize(raw: unknown, account: string) {
     return raw as NormalizedMessage;
@@ -85,6 +96,7 @@ const configWithSource: FlowmeshConfig = {
 
 describe("runTriage", () => {
   beforeEach(() => {
+    currentMessages = mockMessages;
     registerProvider(mockProvider);
   });
 
@@ -170,6 +182,97 @@ describe("runTriage", () => {
       expect(result.plan).toBeUndefined();
     } finally {
       captured.restore();
+      restore();
+    }
+  });
+
+  it("suppresses read messages by default", async () => {
+    currentMessages = mockMessagesWithRead;
+    const captured = captureStdout();
+    const restore = suppressStderr();
+    try {
+      await runTriage({
+        provider: "mock",
+        account: "default",
+        config: emptyConfig,
+        format: "json",
+        statePath: join(await mkdtemp(join(tmpdir(), "flowmesh-state-")), "triage-state.json"),
+      });
+      const result = JSON.parse(captured.getOutput());
+      expect(result.totalMessages).toBe(2);
+      expect(result.state.suppressedReadCount).toBe(1);
+    } finally {
+      captured.restore();
+      restore();
+    }
+  });
+
+  it("suppresses previously notified messages across runs", async () => {
+    const stateDir = await mkdtemp(join(tmpdir(), "flowmesh-state-"));
+    const statePath = join(stateDir, "triage-state.json");
+    const restore = suppressStderr();
+    try {
+      const first = captureStdout();
+      await runTriage({
+        provider: "mock",
+        account: "default",
+        config: emptyConfig,
+        format: "json",
+        statePath,
+      });
+      const firstResult = JSON.parse(first.getOutput());
+      expect(firstResult.totalMessages).toBe(3);
+      first.restore();
+
+      const second = captureStdout();
+      await runTriage({
+        provider: "mock",
+        account: "default",
+        config: emptyConfig,
+        format: "json",
+        statePath,
+      });
+      const secondResult = JSON.parse(second.getOutput());
+      expect(secondResult.totalMessages).toBe(0);
+      expect(secondResult.state.suppressedPreviouslyNotifiedCount).toBe(3);
+      second.restore();
+
+      const persisted = JSON.parse(await readFile(statePath, "utf-8"));
+      expect(persisted.notifiedMessageIds).toEqual(["m1", "m2", "m3"]);
+    } finally {
+      restore();
+    }
+  });
+
+  it("can include read and previously notified messages when requested", async () => {
+    const stateDir = await mkdtemp(join(tmpdir(), "flowmesh-state-"));
+    const statePath = join(stateDir, "triage-state.json");
+    const restore = suppressStderr();
+    try {
+      const seed = captureStdout();
+      await runTriage({
+        provider: "mock",
+        account: "default",
+        config: emptyConfig,
+        format: "json",
+        statePath,
+      });
+      seed.restore();
+
+      const captured = captureStdout();
+      await runTriage({
+        provider: "mock",
+        account: "default",
+        config: emptyConfig,
+        format: "json",
+        statePath,
+        includePreviouslyNotified: true,
+      });
+      const result = JSON.parse(captured.getOutput());
+      expect(result.totalMessages).toBe(3);
+      expect(result.state.suppressedPreviouslyNotifiedCount).toBe(0);
+      captured.restore();
+    } finally {
       restore();
     }
   });

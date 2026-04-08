@@ -74,6 +74,15 @@ export interface ClassifiedMessage {
  * The schemaVersion field allows downstream consumers to detect format changes.
  * The provider/account/mailbox metadata enables automation routing.
  */
+export interface TriageState {
+  path?: string;
+  suppressRead?: boolean;
+  suppressedReadCount?: number;
+  suppressPreviouslyNotified?: boolean;
+  suppressedPreviouslyNotifiedCount?: number;
+  notifiedMessageIds?: string[];
+}
+
 export interface TriageResult {
   /** Schema version for this output format. Bump on breaking changes. */
   schemaVersion: "1";
@@ -92,6 +101,8 @@ export interface TriageResult {
     archiveCandidate: number;
     noise: number;
   };
+  /** Optional suppression/persistence metadata for repeated triage runs. */
+  state?: TriageState;
   /** Classifier used (name or "passthrough"). */
   classifierUsed: string;
   /** Dry-run action plan for archive/noise candidates (when --dry-run is used) */

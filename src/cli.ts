@@ -53,6 +53,12 @@ workflow
   .option("--format <fmt>", "Output format: json or jsonl", "json")
   .option("--json", "Shorthand for --format json")
   .option("--dry-run", "Show planned actions without executing mutations")
+  .option("--state-path <path>", "Persist/read notified-message state from this file")
+  .option("--include-read", "Include read messages instead of suppressing them")
+  .option(
+    "--include-previously-notified",
+    "Include messages already seen in prior triage runs"
+  )
   .option("--config <path>", "Path to config file")
   .action(async (opts) => {
     try {
@@ -67,6 +73,9 @@ workflow
         limit: opts.limit,
         format: (opts.json ? "json" : opts.format) as OutputFormat,
         dryRun: opts.dryRun,
+        statePath: opts.statePath,
+        includeRead: opts.includeRead,
+        includePreviouslyNotified: opts.includePreviouslyNotified,
         config,
       });
     } catch (err) {
@@ -93,6 +102,12 @@ pilot
   .option("--format <fmt>", "Output format: json or jsonl", "json")
   .option("--json", "Shorthand for --format json")
   .option("--dry-run", "Show planned actions without executing mutations")
+  .option("--state-path <path>", "Persist/read notified-message state from this file")
+  .option("--include-read", "Include read messages instead of suppressing them")
+  .option(
+    "--include-previously-notified",
+    "Include messages already seen in prior triage runs"
+  )
   .option("--config <path>", "Path to config file")
   .option("--legacy-cmd <cmd>", "Legacy command to run (space-separated)")
   .option("--legacy-file <path>", "Path to legacy output JSON file")
@@ -117,6 +132,9 @@ pilot
         limit: opts.limit,
         format: (opts.json ? "json" : opts.format) as OutputFormat,
         dryRun: opts.dryRun,
+        statePath: opts.statePath,
+        includeRead: opts.includeRead,
+        includePreviouslyNotified: opts.includePreviouslyNotified,
         configPath: opts.config,
         legacyCmd: opts.legacyCmd ? opts.legacyCmd.split(" ") : undefined,
         legacyFile: opts.legacyFile,

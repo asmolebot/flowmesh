@@ -18,6 +18,10 @@ import {
   findWorkflowForSource,
   type FlowmeshConfig,
 } from "../config/load.js";
+import {
+  filterMessagesWithState,
+  loadTriageState,
+} from "../core/triage-state.js";
 import type {
   ClassifiedMessage,
   NormalizedMessage,
@@ -33,6 +37,9 @@ export interface TriageCaptureOptions {
   since?: string;
   limit?: number;
   dryRun?: boolean;
+  statePath?: string;
+  includeRead?: boolean;
+  includePreviouslyNotified?: boolean;
   config: FlowmeshConfig;
 }
 
@@ -130,10 +137,18 @@ export async function runTriageCapture(
     limit,
   });
 
-  const messages: NormalizedMessage[] = rawItems.map((raw) =>
+  const normalizedMessages: NormalizedMessage[] = rawItems.map((raw) =>
     provider.normalize(raw, account)
   );
-  log(`Normalized ${messages.length} messages`);
+  log(`Normalized ${normalizedMessages.length} messages`);
+
+  const triageState = await loadTriageState({
+    path: options.statePath,
+    suppressRead: options.includeRead ? false : true,
+    suppressPreviouslyNotified: options.includePreviouslyNotified ? false : true,
+  });
+  const filtered = filterMessagesWithState(normalizedMessages, triageState);
+  const messages = filtered.messages;
 
   const buckets: Record<string, ClassifiedMessage[]> = {};
   for (const b of TRIAGE_BUCKETS) {
@@ -163,6 +178,14 @@ export async function runTriageCapture(
       fyi: buckets["fyi"].length,
       archiveCandidate: buckets["archive-candidate"].length,
       noise: buckets["noise"].length,
+    },
+    state: {
+      path: triageState.path,
+      suppressRead: triageState.suppressRead,
+      suppressedReadCount: filtered.suppressedReadCount,
+      suppressPreviouslyNotified: triageState.suppressPreviouslyNotified,
+      suppressedPreviouslyNotifiedCount: filtered.suppressedPreviouslyNotifiedCount,
+      notifiedMessageIds: messages.map((message) => message.id),
     },
     classifierUsed: classifierLabel,
   };

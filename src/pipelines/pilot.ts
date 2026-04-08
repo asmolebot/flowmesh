@@ -33,6 +33,9 @@ export interface PilotOptions {
   since?: string;
   limit?: number;
   dryRun?: boolean;
+  statePath?: string;
+  includeRead?: boolean;
+  includePreviouslyNotified?: boolean;
 
   // legacy options
   legacyCmd?: string[];
@@ -155,6 +158,9 @@ async function runFlowmeshLeg(
     since: options.since,
     limit: options.limit,
     dryRun: options.dryRun,
+    statePath: options.statePath,
+    includeRead: options.includeRead,
+    includePreviouslyNotified: options.includePreviouslyNotified,
     config,
   });
 }
