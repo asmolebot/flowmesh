@@ -59,6 +59,10 @@ workflow
     "--include-previously-notified",
     "Include messages already seen in prior triage runs"
   )
+  .option(
+    "--mark-read-non-important",
+    "Mark non-important notification/marketing/newsletter messages as read"
+  )
   .option("--config <path>", "Path to config file")
   .action(async (opts) => {
     try {
@@ -76,6 +80,7 @@ workflow
         statePath: opts.statePath,
         includeRead: opts.includeRead,
         includePreviouslyNotified: opts.includePreviouslyNotified,
+        markReadNonImportant: opts.markReadNonImportant,
         config,
       });
     } catch (err) {

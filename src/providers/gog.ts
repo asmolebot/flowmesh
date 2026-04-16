@@ -13,7 +13,12 @@
 
 import { execFile } from "node:child_process";
 import type { NormalizedMessage, Address } from "../core/types.js";
-import type { ListParams, ProviderAdapter } from "../core/provider.js";
+import type {
+  ListParams,
+  MutateAction,
+  MutateResult,
+  ProviderAdapter,
+} from "../core/provider.js";
 import { log } from "../core/emit.js";
 
 /** Shape returned by `gog gmail messages search --json` */
@@ -229,17 +234,20 @@ function parseGogJson<T>(stdout: string, context: string): T {
       trimmed.slice(0, 300)
     );
   }
-  // Detect auth prompts in stdout
-  if (looksLikeAuthError(trimmed)) {
-    throw new GogError(
-      "gog requires authentication. Run `gog auth` or check credentials.",
-      "AUTH_REQUIRED",
-      trimmed.slice(0, 300)
-    );
-  }
+
   try {
     return JSON.parse(trimmed) as T;
   } catch {
+    // Only classify stdout as an auth problem if it failed JSON parsing.
+    // Otherwise normal inbox content like "OAuth application" in a subject line
+    // can falsely trip auth detection on valid gog JSON output.
+    if (looksLikeAuthError(trimmed)) {
+      throw new GogError(
+        "gog requires authentication. Run `gog auth` or check credentials.",
+        "AUTH_REQUIRED",
+        trimmed.slice(0, 300)
+      );
+    }
     throw new GogError(
       `gog output is not valid JSON for ${context}`,
       "INVALID_OUTPUT",
@@ -278,6 +286,63 @@ export class GogAdapter implements ProviderAdapter {
     log(`Executing: gog ${args.join(" ")}`);
     const stdout = await execGog(args);
     return parseGogJson<GogGetResult>(stdout, `get ${id}`);
+  }
+
+  async mutate(action: MutateAction): Promise<MutateResult> {
+    const id = action.id?.trim();
+    if (!id) {
+      return {
+        id: action.id,
+        action: action.action,
+        success: false,
+        error: "Missing message id",
+      };
+    }
+
+    const args = ["gmail"];
+    switch (action.action) {
+      case "read":
+        args.push("mark-read", id);
+        break;
+      case "unread":
+        args.push("unread", id);
+        break;
+      case "archive":
+        args.push("archive", id);
+        break;
+      case "trash":
+        args.push("trash", id);
+        break;
+      default:
+        return {
+          id,
+          action: action.action,
+          success: false,
+          error: `Unsupported gog mutate action: ${action.action}`,
+        };
+    }
+
+    args.push("--json", "--no-input");
+    if (action.account) {
+      args.push("--account", action.account);
+    }
+
+    try {
+      log(`Executing: gog ${args.join(" ")}`);
+      await execGog(args);
+      return {
+        id,
+        action: action.action,
+        success: true,
+      };
+    } catch (err) {
+      return {
+        id,
+        action: action.action,
+        success: false,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
   }
 
   normalize(raw: unknown, account: string): NormalizedMessage {

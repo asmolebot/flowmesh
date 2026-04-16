@@ -19,6 +19,7 @@ export interface MutateAction {
   id: string;
   action: "archive" | "trash" | "star" | "unstar" | "read" | "unread" | "label" | "unlabel" | "move";
   target?: string; // label name, folder, etc.
+  account?: string;
 }
 
 export interface MutateResult {

@@ -190,11 +190,11 @@ describe("DEFAULT_RULES", () => {
     expect(result.priority).toBe("low");
   });
 
-  it("classifies provider promotion labels as newsletter", async () => {
+  it("classifies provider promotion labels as marketing", async () => {
     const result = await classifier.classify(
       makeMessage({ labels: ["inbox", "category_promotions"] })
     );
-    expect(result.category).toBe("newsletter");
+    expect(result.category).toBe("marketing");
   });
 
   it("classifies receipt-like subjects", async () => {
@@ -227,6 +227,75 @@ describe("DEFAULT_RULES", () => {
     );
     expect(result.category).toBe("notification");
     expect(result.tags).toContain("calendar");
+  });
+
+  it("classifies security alerts as critical notifications", async () => {
+    const result = await classifier.classify(
+      makeMessage({ subject: "Bank - Someone logged into your account" })
+    );
+    expect(result.category).toBe("notification");
+    expect(result.priority).toBe("critical");
+    expect(result.tags).toContain("important");
+  });
+
+  it("classifies monthly statements as important newsletters", async () => {
+    const result = await classifier.classify(
+      makeMessage({ subject: "Your monthly statement is ready" })
+    );
+    expect(result.category).toBe("newsletter");
+    expect(result.priority).toBe("high");
+    expect(result.tags).toContain("important");
+  });
+
+  it("classifies tax or IRS notices as important notifications", async () => {
+    const result = await classifier.classify(
+      makeMessage({
+        subject: "IRS CP2000 tax notice available",
+        from: [{ address: "notifications@irs.gov" }],
+      })
+    );
+    expect(result.category).toBe("notification");
+    expect(result.priority).toBe("high");
+    expect(result.tags).toContain("tax");
+    expect(result.tags).toContain("important");
+  });
+
+  it("classifies government agency notices as important notifications", async () => {
+    const result = await classifier.classify(
+      makeMessage({
+        subject: "AZMVD registration renewal notice",
+        from: [{ address: "noreply@az.gov" }],
+      })
+    );
+    expect(result.category).toBe("notification");
+    expect(result.priority).toBe("high");
+    expect(result.tags).toContain("government");
+    expect(result.tags).toContain("important");
+  });
+
+  it("classifies shipment updates as important notifications", async () => {
+    const result = await classifier.classify(
+      makeMessage({
+        subject: "UPS: Out for delivery today",
+        from: [{ address: "updates@ups.com" }],
+      })
+    );
+    expect(result.category).toBe("notification");
+    expect(result.priority).toBe("high");
+    expect(result.tags).toContain("shipping");
+    expect(result.tags).toContain("important");
+  });
+
+  it("classifies Amazon promo emails as low-priority marketing", async () => {
+    const result = await classifier.classify(
+      makeMessage({
+        subject: "Amazon: Sale on accessories, save 50%",
+        from: [{ address: "store-news@amazon.com" }],
+      })
+    );
+    expect(result.category).toBe("marketing");
+    expect(result.priority).toBe("low");
+    expect(result.tags).toContain("noise");
   });
 
   it("returns uncategorized for plain message", async () => {

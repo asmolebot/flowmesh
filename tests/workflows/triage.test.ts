@@ -4,7 +4,11 @@ import { tmpdir } from "node:os";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { runTriage } from "../../src/workflows/triage.js";
 import { registerProvider } from "../../src/core/provider.js";
-import type { ProviderAdapter, ListParams } from "../../src/core/provider.js";
+import type {
+  MutateAction,
+  ProviderAdapter,
+  ListParams,
+} from "../../src/core/provider.js";
 import type { NormalizedMessage } from "../../src/core/types.js";
 import type { FlowmeshConfig } from "../../src/config/load.js";
 
@@ -61,6 +65,7 @@ const mockMessagesWithRead: NormalizedMessage[] = [
 ];
 
 let currentMessages = mockMessages;
+let mutateCalls: MutateAction[] = [];
 
 const mockProvider: ProviderAdapter = {
   name: "mock",
@@ -69,6 +74,14 @@ const mockProvider: ProviderAdapter = {
   },
   normalize(raw: unknown, account: string) {
     return raw as NormalizedMessage;
+  },
+  async mutate(action: MutateAction) {
+    mutateCalls.push(action);
+    return {
+      id: action.id,
+      action: action.action,
+      success: true,
+    };
   },
 };
 
@@ -94,9 +107,71 @@ const configWithSource: FlowmeshConfig = {
   },
 };
 
+const configWithMarkRead: FlowmeshConfig = {
+  accounts: {
+    "mark-read-source": {
+      provider: "mock",
+    },
+  },
+  classifiers: {
+    rules: {
+      kind: "rules",
+      options: {
+        rules: [
+          {
+            match: { field: "subject", pattern: "statement" },
+            result: {
+              category: "newsletter",
+              priority: "high",
+              tags: ["important"],
+            },
+          },
+          {
+            match: { field: "subject", pattern: "logged into your account" },
+            result: {
+              category: "notification",
+              priority: "critical",
+              tags: ["important"],
+            },
+          },
+          {
+            match: { field: "subject", pattern: "mentioned you" },
+            result: {
+              category: "notification",
+              priority: "low",
+            },
+          },
+          {
+            match: { field: "subject", pattern: "50%" },
+            result: {
+              category: "marketing",
+              priority: "low",
+            },
+          },
+        ],
+      },
+    },
+  },
+  workflows: {
+    "triage-mark-read": {
+      source: "mark-read-source",
+      classifier: "rules",
+      routing: {
+        markRead: {
+          enabled: true,
+          categories: ["notification", "marketing", "newsletter"],
+          importantPriorities: ["critical", "high"],
+          importantTags: ["important"],
+        },
+      },
+    },
+  },
+};
+
 describe("runTriage", () => {
   beforeEach(() => {
     currentMessages = mockMessages;
+    mutateCalls = [];
     registerProvider(mockProvider);
   });
 
@@ -273,6 +348,33 @@ describe("runTriage", () => {
       expect(result.state.suppressedPreviouslyNotifiedCount).toBe(0);
       captured.restore();
     } finally {
+      restore();
+    }
+  });
+
+  it("marks non-important notification/marketing/newsletter messages as read", async () => {
+    currentMessages = [
+      makeMessage({ id: "m1", subject: "Bank of America - your monthly statement" }),
+      makeMessage({ id: "m2", subject: "Bank of America - Someone logged into your account" }),
+      makeMessage({ id: "m3", subject: "LinkedIn - Someone mentioned you" }),
+      makeMessage({ id: "m4", subject: "Cursor - 50% max plans for your first month" }),
+    ];
+
+    const captured = captureStdout();
+    const restore = suppressStderr();
+    try {
+      await runTriage({
+        source: "mark-read-source",
+        config: configWithMarkRead,
+        format: "json",
+      });
+      const result = JSON.parse(captured.getOutput());
+      expect(mutateCalls.map((a) => a.id)).toEqual(["m3", "m4"]);
+      expect(result.state.markReadAttempted).toBe(2);
+      expect(result.state.markReadSucceeded).toBe(2);
+      expect(result.state.markReadFailed).toBe(0);
+    } finally {
+      captured.restore();
       restore();
     }
   });

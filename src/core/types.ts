@@ -81,6 +81,9 @@ export interface TriageState {
   suppressPreviouslyNotified?: boolean;
   suppressedPreviouslyNotifiedCount?: number;
   notifiedMessageIds?: string[];
+  markReadAttempted?: number;
+  markReadSucceeded?: number;
+  markReadFailed?: number;
 }
 
 export interface TriageResult {
@@ -123,7 +126,7 @@ export interface PlannedAction {
   priority: ClassifierResult["priority"];
   confidence: number;
   reason: string;
-  action: "archive" | "trash" | "skip";
+  action: "archive" | "trash" | "read" | "skip";
   /** Provider name for downstream mutation dispatch. */
   provider: string;
 }
@@ -137,6 +140,7 @@ export interface TriagePlan {
   summary: {
     archive: number;
     trash: number;
+    read: number;
     skip: number;
     total: number;
   };

@@ -26,6 +26,12 @@ export interface WorkflowConfig {
   routing?: {
     archiveCategories?: string[];
     escalateCategories?: string[];
+    markRead?: {
+      enabled?: boolean;
+      categories?: string[];
+      importantPriorities?: Array<"critical" | "high" | "medium" | "low" | "none">;
+      importantTags?: string[];
+    };
   };
   [key: string]: unknown;
 }

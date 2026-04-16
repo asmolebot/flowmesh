@@ -164,7 +164,7 @@ describe("triage end-to-end with rules classifier", () => {
       // Verify plan actions have all required fields
       for (const action of result.plan!.actions) {
         expect(action.messageId).toBeTruthy();
-        expect(action.action).toMatch(/^(archive|trash|skip)$/);
+        expect(action.action).toMatch(/^(archive|trash|read|skip)$/);
         expect(action.provider).toBe("gog"); // fixture messages are gog
         expect(action.priority).toBeTruthy();
         expect(typeof action.confidence).toBe("number");
@@ -175,7 +175,9 @@ describe("triage end-to-end with rules classifier", () => {
       // Summary should be consistent
       const plan = result.plan!;
       expect(plan.summary.total).toBe(plan.actions.length);
-      expect(plan.summary.archive + plan.summary.trash).toBe(plan.summary.total);
+      expect(plan.summary.archive + plan.summary.trash + plan.summary.read).toBe(
+        plan.summary.total
+      );
     } finally {
       captured.restore();
       restoreErr();

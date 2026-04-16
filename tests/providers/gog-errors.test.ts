@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile, chmod, mkdtemp } from "node:fs/promises";
 import { join, dirname } from "node:path";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { GogAdapter, GogError } from "../../src/providers/gog.js";
 import type { GogRawMessage } from "../../src/providers/gog.js";
@@ -73,5 +74,48 @@ describe("GogAdapter.normalize edge cases", () => {
     };
     const msg = adapter.normalize(raw, "test");
     expect(msg.snippet).toContain("This is the body text");
+  });
+
+  it.sequential("does not misclassify valid JSON containing OAuth text as auth failure", async () => {
+    const payload = {
+      messages: [
+        {
+          id: "oauth-msg",
+          threadId: "oauth-msg",
+          date: "2026-04-15 07:51",
+          from: "GitHub <noreply@github.com>",
+          subject: "[GitHub] A third-party OAuth application has been added to your account",
+          labels: ["UNREAD", "INBOX"],
+        },
+      ],
+    };
+
+    const tmp = await mkdtemp(join(tmpdir(), "flowmesh-gog-"));
+    const gogPath = join(tmp, "gog");
+    await writeFile(
+      gogPath,
+      `#!/bin/sh
+cat <<'EOF'
+${JSON.stringify(payload, null, 2)}
+EOF
+`,
+      "utf-8"
+    );
+    await chmod(gogPath, 0o755);
+
+    const previousPath = process.env.PATH;
+    process.env.PATH = `${tmp}:${previousPath ?? ""}`;
+
+    try {
+      const messages = await adapter.list({
+        account: "test-account",
+        query: "in:inbox newer_than:2d",
+        limit: 1,
+      });
+      expect(messages).toHaveLength(1);
+      expect(messages[0]?.subject).toContain("OAuth application");
+    } finally {
+      process.env.PATH = previousPath;
+    }
   });
 });

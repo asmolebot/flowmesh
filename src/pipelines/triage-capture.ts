@@ -65,6 +65,7 @@ function bucketForCategory(category: string): string {
     "archive-candidate": "archive-candidate",
     automated: "archive-candidate",
     notification: "archive-candidate",
+    marketing: "archive-candidate",
     spam: "noise",
     noise: "noise",
     junk: "noise",
