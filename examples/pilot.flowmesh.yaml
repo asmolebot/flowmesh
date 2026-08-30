@@ -42,5 +42,7 @@ workflows:
     source: personal-gmail
     classifier: default-rules
     routing:
+      markRead:
+        enabled: true
       archiveCategories: ["newsletter", "receipt", "automated", "notification"]
       escalateCategories: ["urgent", "reply-needed"]

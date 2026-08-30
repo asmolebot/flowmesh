@@ -32,3 +32,13 @@ __pycache__/
 out/
 artifacts/
 .cache/
+
+# Local triage captures and ad-hoc summaries can contain mailbox content.
+.triage-output.json
+triage*.json
+triage*.out
+triage*.txt
+summary.md
+summary.txt
+message.txt
+msg.txt
